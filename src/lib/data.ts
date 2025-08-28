@@ -3,6 +3,7 @@ export type User = {
   name: string;
   username: string;
   avatarUrl: string;
+  email: string;
 };
 
 export type Video = {
@@ -15,11 +16,13 @@ export type Video = {
   tags: string[];
 };
 
+// This data is now seeded in Firestore and will not be used directly.
+// You can remove this file or keep it for reference.
 export const users: User[] = [
-  { id: '1', name: 'Alice Johnson', username: 'alice', avatarUrl: 'https://i.pravatar.cc/150?u=alice' },
-  { id: '2', name: 'Bob Williams', username: 'bob', avatarUrl: 'https://i.pravatar.cc/150?u=bob' },
-  { id: '3', name: 'Charlie Brown', username: 'charlie', avatarUrl: 'https://i.pravatar.cc/150?u=charlie' },
-  { id: '4', name: 'Diana Prince', username: 'diana', avatarUrl: 'https://i.pravatar.cc/150?u=diana' },
+  { id: '1', name: 'Alice Johnson', username: 'alice', avatarUrl: 'https://i.pravatar.cc/150?u=alice', email: 'alice@example.com' },
+  { id: '2', name: 'Bob Williams', username: 'bob', avatarUrl: 'https://i.pravatar.cc/150?u=bob', email: 'bob@example.com' },
+  { id: '3', name: 'Charlie Brown', username: 'charlie', avatarUrl: 'https://i.pravatar.cc/150?u=charlie', email: 'charlie@example.com' },
+  { id: '4', name: 'Diana Prince', username: 'diana', avatarUrl: 'https://i.pravatar.cc/150?u=diana', email: 'diana@example.com' },
 ];
 
 export const videos: Video[] = [

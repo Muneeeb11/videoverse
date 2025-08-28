@@ -1,19 +1,104 @@
-import { notFound } from 'next/navigation';
-import Image from 'next/image';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { notFound, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { videos, users } from '@/lib/data';
+import { doc, getDoc, collection, getDocs, query, where, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Video, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import VideoCard from '@/components/video-card';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function VideoPage({ params }: { params: { id: string } }) {
-  const video = videos.find((v) => v.id === params.id);
-  if (!video) {
-    notFound();
+export default function VideoPage() {
+  const params = useParams();
+  const { id } = params;
+
+  const [video, setVideo] = useState<Video | null>(null);
+  const [uploader, setUploader] = useState<User | null>(null);
+  const [moreVideos, setMoreVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchVideoData = async () => {
+      setLoading(true);
+      
+      const videoId = Array.isArray(id) ? id[0] : id;
+
+      // Fetch video
+      const videoDocRef = doc(db, 'videos', videoId);
+      const videoDocSnap = await getDoc(videoDocRef);
+
+      if (!videoDocSnap.exists()) {
+        notFound();
+        return;
+      }
+      const videoData = { id: videoDocSnap.id, ...videoDocSnap.data() } as Video;
+      setVideo(videoData);
+      
+      // Fetch uploader
+      if (videoData.uploaderId) {
+        const userDocRef = doc(db, 'users', videoData.uploaderId);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setUploader({ id: userDocSnap.id, ...userDocSnap.data() } as User);
+        }
+      }
+
+      // Fetch more videos (excluding the current one)
+      const videosQuery = query(collection(db, 'videos'), where('__name__', '!=', videoId), limit(4));
+      const moreVideosSnapshot = await getDocs(videosQuery);
+      const moreVideosData = moreVideosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Video));
+      
+      // We need user data for these video cards as well
+      const allUsersSnapshot = await getDocs(collection(db, 'users'));
+      const allUsersData = allUsersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as User);
+
+      const videosWithUploader = moreVideosData.map(v => {
+        const uploader = allUsersData.find(u => u.id === v.uploaderId);
+        return { ...v, uploader };
+      });
+      setMoreVideos(videosWithUploader);
+
+
+      setLoading(false);
+    };
+
+    fetchVideoData();
+  }, [id]);
+
+  if (loading) {
+    return (
+        <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+            <Skeleton className="aspect-video w-full rounded-lg mb-6" />
+            <Skeleton className="h-10 w-3/4 mb-4" />
+            <div className="flex items-center gap-4 mb-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <Skeleton className="h-6 w-1/4" />
+            </div>
+            <Separator className="my-6" />
+            <Skeleton className="h-24 w-full" />
+            </div>
+            <div className="lg:col-span-1">
+            <Skeleton className="h-8 w-1/2 mb-4" />
+            <div className="space-y-4">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+            </div>
+            </div>
+        </div>
+        </div>
+    );
   }
-  const uploader = users.find((u) => u.id === video.uploaderId);
-  const moreVideos = videos.filter((v) => v.id !== video.id).slice(0, 4);
+
+  if (!video) {
+    return notFound();
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -68,7 +153,7 @@ export default function VideoPage({ params }: { params: { id: string } }) {
           <h2 className="text-2xl font-bold mb-4">More Videos</h2>
           <div className="space-y-4">
             {moreVideos.map((moreVideo) => {
-              const moreVideoUploader = users.find(user => user.id === moreVideo.uploaderId);
+              const moreVideoUploader = moreVideo.uploaderId ? (moreVideo as any).uploader : undefined;
               return (
                 <VideoCard key={moreVideo.id} video={moreVideo} uploader={moreVideoUploader} />
               )

@@ -1,17 +1,82 @@
-import { notFound } from 'next/navigation';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { notFound, useParams } from 'next/navigation';
 import Image from 'next/image';
-import { users, videos } from '@/lib/data';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { User, Video } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import VideoCard from '@/components/video-card';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function ProfilePage({ params }: { params: { username: string } }) {
-  const user = users.find((u) => u.username === params.username);
+export default function ProfilePage() {
+  const params = useParams();
+  const { username } = params;
 
-  if (!user) {
-    notFound();
+  const [user, setUser] = useState<User | null>(null);
+  const [userVideos, setUserVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!username) return;
+
+    const fetchProfileData = async () => {
+      setLoading(true);
+      const profileUsername = Array.isArray(username) ? username[0] : username;
+      
+      const usersQuery = query(collection(db, 'users'), where('username', '==', profileUsername));
+      const usersSnapshot = await getDocs(usersQuery);
+
+      if (usersSnapshot.empty) {
+        notFound();
+        return;
+      }
+      
+      const userData = { id: usersSnapshot.docs[0].id, ...usersSnapshot.docs[0].data() } as User;
+      setUser(userData);
+
+      const videosQuery = query(collection(db, 'videos'), where('uploaderId', '==', userData.id));
+      const videosSnapshot = await getDocs(videosQuery);
+      const videosData = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Video[];
+      setUserVideos(videosData);
+
+      setLoading(false);
+    };
+
+    fetchProfileData();
+  }, [username]);
+
+  if (loading) {
+    return (
+        <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 mb-12">
+            <Skeleton className="h-32 w-32 rounded-full" />
+            <div className="space-y-2">
+            <Skeleton className="h-12 w-64" />
+            <Skeleton className="h-6 w-40" />
+            </div>
+        </div>
+        <div>
+            <Skeleton className="h-10 w-48 mb-8" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+                <div key={i} className="space-y-2">
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-5 w-1/2" />
+                </div>
+            ))}
+            </div>
+        </div>
+        </div>
+    );
   }
 
-  const userVideos = videos.filter((v) => v.uploaderId === user.id);
+  if (!user) {
+    return notFound();
+  }
+
 
   return (
     <div className="container mx-auto px-4 py-8">
