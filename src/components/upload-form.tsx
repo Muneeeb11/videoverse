@@ -15,6 +15,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from './ui/progress';
+import Image from 'next/image';
 
 
 export default function UploadForm() {
@@ -237,23 +238,22 @@ export default function UploadForm() {
       <div className="space-y-2">
         <Label htmlFor="video-file" className="text-lg">Video File</Label>
         <div className="flex items-center justify-center w-full">
-            <label htmlFor="dropzone-file" className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg  bg-card  ${videoFile ? 'border-primary' : ''} ${isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent/50'}`}>
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    {thumbnailPreview ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={thumbnailPreview} alt="Video thumbnail preview" className="h-28 object-contain rounded-md" />
-                    ) : (
-                      <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
-                    )}
-                    {videoFile ? (
-                      <p className='font-semibold text-foreground mt-2'>{videoFile.name}</p>
-                    ) : (
-                      <>
-                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">MP4, MOV, or WEBM (MAX. 500MB)</p>
-                      </>
-                    )}
-                </div>
+            <label htmlFor="dropzone-file" className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg bg-card relative ${videoFile ? 'border-primary' : ''} ${isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent/50'}`}>
+                {thumbnailPreview ? (
+                  <Image src={thumbnailPreview} alt="Video thumbnail preview" layout="fill" className="object-contain rounded-md" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
+                    <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                    <p className="text-xs text-muted-foreground">MP4, MOV, or WEBM (MAX. 500MB)</p>
+                  </div>
+                )}
+                 {videoFile && !thumbnailPreview && (
+                  <p className="font-semibold text-foreground mt-2 z-10 bg-background/80 px-2 py-1 rounded">Generating thumbnail...</p>
+                )}
+                 {videoFile && thumbnailPreview && (
+                  <p className='absolute bottom-2 font-semibold text-foreground z-10 bg-background/80 px-2 py-1 rounded'>{videoFile.name}</p>
+                )}
                 <input id="dropzone-file" type="file" className="hidden" accept="video/*" onChange={handleFileChange} disabled={isUploading} />
             </label>
         </div> 
@@ -276,3 +276,5 @@ export default function UploadForm() {
     </form>
   );
 }
+
+    
