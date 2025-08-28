@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Upload, LogIn, Video, LogOut, User as UserIcon } from 'lucide-react';
+import { Upload, LogIn, LogOut, User as UserIcon, Search } from 'lucide-react';
 import { Logo } from './icons';
 import { useAuth } from '@/hooks/use-auth';
 import { auth } from '@/lib/firebase';
@@ -17,14 +17,25 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { Input } from './ui/input';
+import { useState } from 'react';
 
 export default function Header() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = async () => {
     await signOut(auth);
     router.push('/');
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
   };
 
   return (
@@ -36,10 +47,20 @@ export default function Header() {
             <span className="font-headline">VideoVerse</span>
           </Link>
         </div>
-        <nav className="flex flex-1 items-center space-x-4">
-          {/* Add more nav links here if needed */}
-        </nav>
-        <div className="flex items-center justify-end space-x-2">
+        <div className="flex flex-1 items-center justify-center">
+          <form onSubmit={handleSearch} className="w-full max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search for videos..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </form>
+        </div>
+        <div className="flex flex-shrink-0 items-center justify-end space-x-2 pl-4">
           {!loading &&
             (user ? (
               <>
