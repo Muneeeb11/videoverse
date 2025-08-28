@@ -1,11 +1,10 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Your web app's Firebase configuration - HARDCODED
-const firebaseConfig: FirebaseOptions = {
+const firebaseConfig = {
   apiKey: "AIzaSyBcr9mv3RwCLX8HrSyETyZ9ZDfv-4xx74U",
   authDomain: "videoverse-k90qc.firebaseapp.com",
   projectId: "videoverse-k90qc",
