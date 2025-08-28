@@ -6,25 +6,42 @@ import { db } from '@/lib/firebase';
 import type { Video, User } from '@/lib/data';
 import VideoCard from '@/components/video-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import SeedButton from '@/components/seed-button';
+import { seedDatabase } from '@/lib/seed';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [needsSeeding, setNeedsSeeding] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchVideosAndUsers = async () => {
       setLoading(true);
       try {
         const videosQuery = query(collection(db, "videos"), orderBy('createdAt', 'desc'));
-        const videosSnapshot = await getDocs(videosQuery);
+        let videosSnapshot = await getDocs(videosQuery);
         
+        // If the database is empty, seed it
         if (videosSnapshot.empty) {
-            setNeedsSeeding(true);
-            setLoading(false);
-            return;
+            console.log('No videos found, seeding database...');
+            const seedResult = await seedDatabase();
+            if (seedResult.success) {
+                toast({
+                    title: "Welcome!",
+                    description: "We've added some sample videos for you.",
+                });
+                // Re-fetch the data after seeding
+                videosSnapshot = await getDocs(videosQuery);
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Could not load sample videos.",
+                    variant: "destructive",
+                });
+                setLoading(false);
+                return;
+            }
         }
         
         const videosData = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Video[];
@@ -36,12 +53,17 @@ export default function Home() {
 
       } catch (error) {
         console.error("Error fetching data:", error);
+        toast({
+            title: "Error",
+            description: "Could not fetch video data.",
+            variant: "destructive",
+        });
       }
       setLoading(false);
     };
 
     fetchVideosAndUsers();
-  }, []);
+  }, [toast]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -56,8 +78,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-      ) : needsSeeding ? (
-        <SeedButton />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {videos.map((video) => {
