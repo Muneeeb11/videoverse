@@ -10,8 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { UploadCloud, X } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { db, storage } from '@/lib/firebase';
-import { addDoc, collection } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from './ui/progress';
 
@@ -26,7 +26,6 @@ export default function UploadForm() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -47,9 +46,8 @@ export default function UploadForm() {
       const file = e.target.files[0];
       if (file.type.startsWith('video/')) {
         setVideoFile(file);
-        // For simplicity, we'll use a placeholder for thumbnail generation
-        // In a real app, you'd generate a thumbnail from the video
-        setThumbnailFile(null); 
+      } else {
+        toast({ title: "Invalid File", description: "Please select a valid video file.", variant: 'destructive' });
       }
     }
   };
@@ -68,37 +66,44 @@ export default function UploadForm() {
     setIsUploading(true);
     setUploadProgress(0);
 
-    try {
-        // 1. Upload video file to Firebase Storage
-        const videoFileRef = ref(storage, `videos/${user.id}/${Date.now()}-${videoFile.name}`);
-        const videoUploadTask = await uploadBytes(videoFileRef, videoFile);
-        const videoUrl = await getDownloadURL(videoUploadTask.ref);
-        setUploadProgress(50); // Rough progress update
+    const videoFileRef = ref(storage, `videos/${user.id}/${Date.now()}-${videoFile.name}`);
+    const uploadTask = uploadBytesResumable(videoFileRef, videoFile);
 
-        // For now, let's use a placeholder thumbnail URL.
-        const thumbnailUrl = `https://picsum.photos/seed/${Math.random()}/600/400`;
-
-        // 2. Add video metadata to Firestore
-        const newVideoDoc = await addDoc(collection(db, 'videos'), {
-            title,
-            description,
-            tags,
-            videoUrl,
-            thumbnailUrl,
-            uploaderId: user.id,
-            createdAt: new Date(),
-        });
-        setUploadProgress(100);
-
-        toast({ title: "Success!", description: "Your video has been uploaded." });
-        router.push(`/video/${newVideoDoc.id}`);
-
-    } catch (error) {
+    uploadTask.on('state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setUploadProgress(progress);
+      },
+      (error) => {
         console.error("Upload failed: ", error);
-        toast({ title: "Upload Failed", description: "Something went wrong. Please try again.", variant: 'destructive' });
-    } finally {
+        toast({ title: "Upload Failed", description: "Something went wrong. Please check storage rules and try again.", variant: 'destructive' });
         setIsUploading(false);
-    }
+      },
+      async () => {
+        try {
+          const videoUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          const thumbnailUrl = `https://picsum.photos/seed/${uploadTask.snapshot.ref.name}/600/400`;
+
+          const newVideoDoc = await addDoc(collection(db, 'videos'), {
+              title,
+              description,
+              tags,
+              videoUrl,
+              thumbnailUrl,
+              uploaderId: user.id,
+              createdAt: serverTimestamp(),
+          });
+
+          toast({ title: "Success!", description: "Your video has been uploaded." });
+          router.push(`/video/${newVideoDoc.id}`);
+        } catch (error) {
+            console.error("Error saving video data:", error);
+            toast({ title: "Error", description: "Failed to save video details.", variant: 'destructive' });
+        } finally {
+            setIsUploading(false);
+        }
+      }
+    );
   };
 
 
@@ -113,6 +118,7 @@ export default function UploadForm() {
           required 
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          disabled={isUploading}
         />
       </div>
 
@@ -126,6 +132,7 @@ export default function UploadForm() {
           required
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          disabled={isUploading}
         />
       </div>
 
@@ -143,8 +150,9 @@ export default function UploadForm() {
               }
             }}
             placeholder="Add a tag and press Enter"
+            disabled={isUploading}
           />
-          <Button type="button" onClick={addTag}>Add Tag</Button>
+          <Button type="button" onClick={addTag} disabled={isUploading}>Add Tag</Button>
         </div>
         <div className="p-4 border-2 border-dashed rounded-lg min-h-[80px] flex flex-wrap gap-2">
           {tags.length > 0 ? (
@@ -153,8 +161,9 @@ export default function UploadForm() {
                 {tag}
                 <button
                   type="button"
-                  onClick={() => removeTag(tag)}
-                  className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                  onClick={() => !isUploading && removeTag(tag)}
+                  className="ml-2 rounded-full hover:bg-muted-foreground/20 p-0.5 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  disabled={isUploading}
                 >
                   <X className="h-3 w-3" />
                   <span className="sr-only">Remove {tag}</span>
@@ -170,7 +179,7 @@ export default function UploadForm() {
       <div className="space-y-2">
         <Label htmlFor="video-file" className="text-lg">Video File</Label>
         <div className="flex items-center justify-center w-full">
-            <label htmlFor="dropzone-file" className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-accent/50 ${videoFile ? 'border-primary' : ''}`}>
+            <label htmlFor="dropzone-file" className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg  bg-card  ${videoFile ? 'border-primary' : ''} ${isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent/50'}`}>
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
                     {videoFile ? (
@@ -182,7 +191,7 @@ export default function UploadForm() {
                       </>
                     )}
                 </div>
-                <input id="dropzone-file" type="file" className="hidden" accept="video/*" onChange={handleFileChange} />
+                <input id="dropzone-file" type="file" className="hidden" accept="video/*" onChange={handleFileChange} disabled={isUploading} />
             </label>
         </div> 
       </div>
@@ -191,14 +200,14 @@ export default function UploadForm() {
         <div className="space-y-2">
             <Label className="text-lg">Upload Progress</Label>
             <Progress value={uploadProgress} className="w-full" />
-            <p className='text-sm text-muted-foreground text-center'>{uploadProgress}% complete</p>
+            <p className='text-sm text-muted-foreground text-center'>{Math.round(uploadProgress)}% complete</p>
         </div>
       )}
 
       <div className="flex justify-end">
         <Button type="submit" size="lg" disabled={isUploading}>
           <UploadCloud className="mr-2 h-5 w-5" />
-          {isUploading ? 'Uploading...' : 'Upload Video'}
+          {isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : 'Upload Video'}
         </Button>
       </div>
     </form>
