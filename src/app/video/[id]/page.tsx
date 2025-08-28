@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { doc, getDoc, collection, getDocs, query, where, limit, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, limit, orderBy, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Video, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -58,7 +58,13 @@ export default function VideoPage() {
       }
 
       // Fetch more videos (excluding the current one)
-      const videosQuery = query(collection(db, 'videos'), where('__name__', '!=', videoId), orderBy('__name__'), limit(4));
+      const videosQuery = query(
+        collection(db, 'videos'), 
+        where(documentId(), '!=', videoId), 
+        orderBy(documentId()), // required for inequality filters
+        orderBy('createdAt', 'desc'), 
+        limit(4)
+      );
       const moreVideosSnapshot = await getDocs(videosQuery);
       const moreVideosData = moreVideosSnapshot.docs.map(doc => {
           const v = { id: doc.id, ...doc.data() } as Video;
@@ -180,3 +186,5 @@ export default function VideoPage() {
     </div>
   );
 }
+
+    
