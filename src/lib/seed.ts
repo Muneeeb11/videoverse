@@ -11,7 +11,7 @@ const users: Omit<User, 'id' | 'email'>[] = [
     { name: 'Bob Williams', username: 'bob', avatarUrl: 'https://i.pravatar.cc/150?u=bob' },
 ];
 
-const videos: Omit<Video, 'id' | 'uploaderId'>[] = [
+const videos: Omit<Video, 'id' | 'uploaderId' | 'createdAt' | 'likes'>[] = [
     {
         title: 'Exploring the Alps',
         description: 'A breathtaking journey through the scenic routes of the Swiss Alps. Snow-capped peaks, serene lakes, and lush green valleys await.',
@@ -70,6 +70,7 @@ export async function seedDatabase() {
             ...videoData,
             uploaderId: randomUploaderId,
             createdAt: new Date(),
+            likes: [],
         });
     });
 

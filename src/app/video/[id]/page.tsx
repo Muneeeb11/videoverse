@@ -1,21 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { doc, getDoc, collection, getDocs, query, where, limit, documentId } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, limit, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Video, User } from '@/lib/data';
+import { useAuth } from '@/hooks/use-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import VideoCard from '@/components/video-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import CommentsSection from '@/components/comments-section';
+import { Button } from '@/components/ui/button';
+import { Heart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function VideoPage() {
   const params = useParams();
   const { id } = params;
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const [video, setVideo] = useState<Video | null>(null);
   const [uploader, setUploader] = useState<User | null>(null);
@@ -23,13 +29,64 @@ export default function VideoPage() {
   const [loading, setLoading] = useState(true);
   const [allUsers, setAllUsers] = useState<Record<string, User>>({});
 
+  const [isLiking, setIsLiking] = useState(false);
+
+  const videoId = Array.isArray(id) ? id[0] : id;
+
+  const isLiked = useMemo(() => {
+    if (!video || !user) return false;
+    return video.likes?.includes(user.id);
+  }, [video, user]);
+
+  const likeCount = useMemo(() => {
+    return video?.likes?.length || 0;
+  }, [video]);
+
+  const handleLike = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to like a video.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!video || isLiking) return;
+
+    setIsLiking(true);
+    const videoRef = doc(db, 'videos', videoId);
+
+    try {
+      if (isLiked) {
+        // Unlike the video
+        await updateDoc(videoRef, {
+          likes: arrayRemove(user.id)
+        });
+        setVideo(prev => prev ? { ...prev, likes: prev.likes.filter(uid => uid !== user.id) } : null);
+      } else {
+        // Like the video
+        await updateDoc(videoRef, {
+          likes: arrayUnion(user.id)
+        });
+        setVideo(prev => prev ? { ...prev, likes: [...(prev.likes || []), user.id] } : null);
+      }
+    } catch (error) {
+      console.error("Error updating likes:", error);
+      toast({
+        title: "Error",
+        description: "Could not update like status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
 
   useEffect(() => {
     const fetchVideoData = async () => {
       setLoading(true);
       
-      const videoId = Array.isArray(id) ? id[0] : id;
-
       // Fetch video
       const videoDocRef = doc(db, 'videos', videoId);
       const videoDocSnap = await getDoc(videoDocRef);
@@ -60,7 +117,7 @@ export default function VideoPage() {
       // Fetch more videos (excluding the current one)
       const videosQuery = query(
         collection(db, 'videos'), 
-        where(documentId(), '!=', videoId), 
+        where('__name__', '!=', videoId), 
         limit(4)
       );
       const moreVideosSnapshot = await getDocs(videosQuery);
@@ -76,7 +133,7 @@ export default function VideoPage() {
     if (id) {
         fetchVideoData();
     }
-  }, [id]);
+  }, [id, videoId]);
 
   if (loading) {
     return (
@@ -133,8 +190,8 @@ export default function VideoPage() {
             {video.title}
           </h1>
           
-          {uploader && (
-            <div className="flex items-center gap-4 mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            {uploader && (
               <Link href={`/profile/${uploader.username}`} className="flex items-center gap-3 group">
                   <Avatar>
                     <AvatarImage src={uploader.avatarUrl} alt={uploader.name} />
@@ -142,8 +199,16 @@ export default function VideoPage() {
                   </Avatar>
                   <span className="font-semibold text-lg group-hover:text-primary">{uploader.name}</span>
               </Link>
+            )}
+
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleLike} disabled={isLiking || !user}>
+                <Heart className={cn("mr-2 h-5 w-5", isLiked && "fill-destructive text-destructive")} />
+                <span>{likeCount}</span>
+              </Button>
             </div>
-          )}
+          </div>
+
 
           <Separator className="my-6" />
 

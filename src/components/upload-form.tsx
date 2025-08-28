@@ -152,6 +152,7 @@ export default function UploadForm() {
           thumbnailUrl,
           uploaderId: user.id,
           createdAt: serverTimestamp(),
+          likes: [],
       });
 
       toast({ title: "Success!", description: "Your video has been uploaded." });
