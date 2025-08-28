@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { doc, getDoc, collection, getDocs, query, where, limit, orderBy, documentId } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, limit, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Video, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import VideoCard from '@/components/video-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import CommentsSection from '@/components/comments-section';
 
 export default function VideoPage() {
   const params = useParams();
@@ -163,6 +164,8 @@ export default function VideoPage() {
               </div>
             </div>
           )}
+
+          <CommentsSection videoId={video.id} />
 
         </div>
 

@@ -16,6 +16,16 @@ export type Video = {
   tags: string[];
 };
 
+export type Comment = {
+  id: string;
+  text: string;
+  userId: string;
+  username: string;
+  avatarUrl: string;
+  createdAt: any; // Firestore Timestamp
+};
+
+
 // This data is now seeded in Firestore and will not be used directly.
 // You can remove this file or keep it for reference.
 export const users: User[] = [
