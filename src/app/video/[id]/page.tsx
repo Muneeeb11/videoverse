@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,6 +17,7 @@ import CommentsSection from '@/components/comments-section';
 import { Button } from '@/components/ui/button';
 import { Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function VideoPage() {
   const params = useParams();
