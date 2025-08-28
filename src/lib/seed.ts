@@ -8,8 +8,6 @@ import type { User, Video } from './data';
 const users: Omit<User, 'id'>[] = [
     { name: 'Alice Johnson', username: 'alice', avatarUrl: 'https://i.pravatar.cc/150?u=alice', email: 'alice@example.com' },
     { name: 'Bob Williams', username: 'bob', avatarUrl: 'https://i.pravatar.cc/150?u=bob', email: 'bob@example.com' },
-    { name: 'Charlie Brown', username: 'charlie', avatarUrl: 'https://i.pravatar.cc/150?u=charlie', email: 'charlie@example.com' },
-    { name: 'Diana Prince', username: 'diana', avatarUrl: 'https://i.pravatar.cc/150?u=diana', email: 'diana@example.com' },
 ];
 
 const videos: Omit<Video, 'id' | 'uploaderId'>[] = [
@@ -33,41 +31,6 @@ const videos: Omit<Video, 'id' | 'uploaderId'>[] = [
         thumbnailUrl: 'https://picsum.photos/seed/desk/600/400',
         videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
         tags: ['desk setup', 'tech', 'productivity', 'home office'],
-    },
-    {
-        title: 'Acoustic Cover of a Classic Song',
-        description: 'A heartfelt acoustic guitar cover of a timeless classic. Hope you enjoy my rendition!',
-        thumbnailUrl: 'https://picsum.photos/seed/guitar/600/400',
-        videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-        tags: ['music', 'cover', 'acoustic', 'guitar'],
-    },
-    {
-        title: 'Coastal Cities of Italy',
-        description: 'Join me as we explore the beautiful coastal cities of Italy, from Cinque Terre to the Amalfi Coast. Amazing views and delicious food!',
-        thumbnailUrl: 'https://picsum.photos/seed/italy/600/400',
-        videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-        tags: ['travel', 'italy', 'amalfi coast', 'cinque terre'],
-    },
-    {
-        title: 'How to Make Ramen at Home',
-        description: 'A simple recipe for delicious and authentic ramen at home. Forget instant noodles, this is the real deal.',
-        thumbnailUrl: 'https://picsum.photos/seed/ramen/600/400',
-        videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-        tags: ['cooking', 'ramen', 'japanese food', 'recipe'],
-    },
-    {
-        title: 'Unboxing the new M4 Tablet',
-        description: 'First impressions and unboxing of the brand new M4-powered tablet. Is this the ultimate creative tool?',
-        thumbnailUrl: 'https://picsum.photos/seed/tablet/600/400',
-        videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-        tags: ['tech', 'unboxing', 'tablet', 'review'],
-    },
-    {
-        title: 'Live Looping with a Piano and Synth',
-        description: 'A live performance creating a song from scratch using a piano, synthesizer, and a loop pedal. Music creation in real-time.',
-        thumbnailUrl: 'https://picsum.photos/seed/piano/600/400',
-        videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
-        tags: ['music', 'live looping', 'piano', 'synthesizer', 'improvisation'],
     },
 ];
 // --- END DUMMY DATA ---
