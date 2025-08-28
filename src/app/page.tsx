@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, documentId } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Video, User } from '@/lib/data';
 import VideoCard from '@/components/video-card';
@@ -19,19 +19,11 @@ export default function Home() {
     const fetchVideosAndUsers = async () => {
       setLoading(true);
       try {
-        // First, fetch all users and create a map for easy lookup
-        const usersSnapshot = await getDocs(collection(db, "users"));
-        const usersData = usersSnapshot.docs.reduce((acc, doc) => {
-          acc[doc.id] = { id: doc.id, ...doc.data() } as User;
-          return acc;
-        }, {} as Record<string, User>);
-        setUsers(usersData);
-        
-        // Then, fetch videos
+        // First, fetch videos
         const videosQuery = query(collection(db, "videos"), orderBy('createdAt', 'desc'));
         let videosSnapshot = await getDocs(videosQuery);
         
-        // If the database is empty, seed it
+        // If the database is empty, seed it and refetch
         if (videosSnapshot.empty) {
             console.log('No videos found, seeding database...');
             const seedResult = await seedDatabase();
@@ -40,7 +32,6 @@ export default function Home() {
                     title: "Welcome!",
                     description: "We've added some sample videos for you.",
                 });
-                // Re-fetch the data after seeding
                 videosSnapshot = await getDocs(videosQuery);
             } else {
                 toast({
@@ -56,13 +47,27 @@ export default function Home() {
         const videosData = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Video[];
         setVideos(videosData);
 
+        // If there are videos, fetch the corresponding users
+        if (videosData.length > 0) {
+          const uploaderIds = [...new Set(videosData.map(v => v.uploaderId))];
+          if (uploaderIds.length > 0) {
+            const usersQuery = query(collection(db, "users"), where(documentId(), 'in', uploaderIds));
+            const usersSnapshot = await getDocs(usersQuery);
+            const usersData = usersSnapshot.docs.reduce((acc, doc) => {
+              acc[doc.id] = { id: doc.id, ...doc.data() } as User;
+              return acc;
+            }, {} as Record<string, User>);
+            setUsers(usersData);
+          }
+        }
+
       } catch (error: any) {
         console.error("Error fetching data:", error);
         // Display a more specific error if it's a permission issue
-        if (error.code === 'permission-denied') {
+        if (error.code === 'permission-denied' || error.code === 'failed-precondition') {
              toast({
                 title: "Permissions Error",
-                description: "Could not fetch video data. Please check Firestore security rules.",
+                description: "Could not fetch data. Please check Firestore security rules and ensure indexes are built.",
                 variant: "destructive",
             });
         } else {
