@@ -19,33 +19,33 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authState, setAuthState] = useState<AuthContextType>({
+    user: null,
+    firebaseUser: null,
+    loading: true,
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentFirebaseUser) => {
-      setFirebaseUser(currentFirebaseUser);
       if (currentFirebaseUser) {
         const userDocRef = doc(db, "users", currentFirebaseUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
-          setUser({ id: userDocSnap.id, ...userDocSnap.data() } as User);
+          const userData = { id: userDocSnap.id, ...userDocSnap.data() } as User;
+          setAuthState({ user: userData, firebaseUser: currentFirebaseUser, loading: false });
         } else {
-          // This case might happen if a user is authenticated but their Firestore doc is deleted.
-          setUser(null);
+          setAuthState({ user: null, firebaseUser: currentFirebaseUser, loading: false });
         }
       } else {
-        setUser(null);
+        setAuthState({ user: null, firebaseUser: null, loading: false });
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, firebaseUser, loading }}>
+    <AuthContext.Provider value={authState}>
       {children}
     </AuthContext.Provider>
   );
