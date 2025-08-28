@@ -4,6 +4,7 @@ import type { Video, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from './ui/card';
 import { cn } from '@/lib/utils';
+import { Skeleton } from './ui/skeleton';
 
 type VideoCardProps = {
   video: Video;
@@ -31,10 +32,12 @@ export default function VideoCard({ video, uploader, layout = 'vertical' }: Vide
                             <h3 className="font-semibold text-base leading-tight truncate mb-1 group-hover:text-primary">
                             {video.title}
                             </h3>
-                            {uploader && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>{uploader.name}</span>
-                            </div>
+                            {uploader ? (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <span>{uploader.name}</span>
+                                </div>
+                            ) : (
+                                <Skeleton className="h-4 w-16" />
                             )}
                         </div>
                     </CardContent>
@@ -61,14 +64,19 @@ export default function VideoCard({ video, uploader, layout = 'vertical' }: Vide
                 <h3 className="font-semibold text-lg leading-tight truncate mb-2 group-hover:text-primary">
                 {video.title}
                 </h3>
-                {uploader && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Avatar className="h-6 w-6">
-                    <AvatarImage src={uploader.avatarUrl} alt={uploader.name} />
-                    <AvatarFallback>{uploader.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span>{uploader.name}</span>
-                </div>
+                {uploader ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Avatar className="h-6 w-6">
+                        <AvatarImage src={uploader.avatarUrl} alt={uploader.name} />
+                        <AvatarFallback>{uploader.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span>{uploader.name}</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="h-6 w-6 rounded-full" />
+                        <Skeleton className="h-5 w-24" />
+                    </div>
                 )}
             </div>
             </CardContent>
