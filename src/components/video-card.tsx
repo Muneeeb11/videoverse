@@ -1,8 +1,8 @@
+
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Video, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent } from './ui/card';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 
@@ -39,7 +39,7 @@ export default function VideoCard({ video, uploader, layout = 'vertical' }: Vide
                             <Skeleton className="h-5 w-24 mt-1" />
                         )}
                          <p className="text-xs text-muted-foreground mt-1">
-                            {video.likes.length} likes &middot; {video.createdAt?.toDate().toLocaleDateString()}
+                            {(video.likes || []).length} likes &middot; {video.createdAt?.toDate().toLocaleDateString()}
                         </p>
                     </div>
                 </div>
