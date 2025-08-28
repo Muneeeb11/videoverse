@@ -19,24 +19,15 @@ export default function VideoPage() {
   const [video, setVideo] = useState<Video | null>(null);
   const [uploader, setUploader] = useState<User | null>(null);
   const [moreVideos, setMoreVideos] = useState<Video[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [allUsers, setAllUsers] = useState<Record<string, User>>({});
+
 
   useEffect(() => {
-    const fetchAllUsers = async () => {
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as User);
-      setAllUsers(usersData);
-      return usersData;
-    };
-
     const fetchVideoData = async () => {
       setLoading(true);
       
       const videoId = Array.isArray(id) ? id[0] : id;
-
-      // Pre-fetch all users to avoid multiple queries
-      const users = await fetchAllUsers();
 
       // Fetch video
       const videoDocRef = doc(db, 'videos', videoId);
@@ -48,10 +39,18 @@ export default function VideoPage() {
       }
       const videoData = { id: videoDocSnap.id, ...videoDocSnap.data() } as Video;
       setVideo(videoData);
+
+      // Fetch all users at once for efficiency
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const usersData = usersSnapshot.docs.reduce((acc, doc) => {
+        acc[doc.id] = { id: doc.id, ...doc.data() } as User;
+        return acc;
+      }, {} as Record<string, User>);
+      setAllUsers(usersData);
       
       // Find uploader from pre-fetched users
       if (videoData.uploaderId) {
-        const uploaderData = users.find(u => u.id === videoData.uploaderId);
+        const uploaderData = usersData[videoData.uploaderId];
         if (uploaderData) {
           setUploader(uploaderData);
         }
@@ -61,15 +60,11 @@ export default function VideoPage() {
       const videosQuery = query(
         collection(db, 'videos'), 
         where(documentId(), '!=', videoId), 
-        orderBy(documentId()), // required for inequality filters
-        orderBy('createdAt', 'desc'), 
         limit(4)
       );
       const moreVideosSnapshot = await getDocs(videosQuery);
       const moreVideosData = moreVideosSnapshot.docs.map(doc => {
-          const v = { id: doc.id, ...doc.data() } as Video;
-          const uploader = users.find(u => u.id === v.uploaderId);
-          return { ...v, uploader };
+          return { id: doc.id, ...doc.data() } as Video;
       });
       
       setMoreVideos(moreVideosData);
@@ -175,7 +170,7 @@ export default function VideoPage() {
           <h2 className="text-2xl font-bold mb-4">More Videos</h2>
           <div className="space-y-4">
             {moreVideos.map((moreVideo) => {
-              const moreVideoUploader = (moreVideo as any).uploader;
+              const moreVideoUploader = allUsers[moreVideo.uploaderId];
               return (
                 <VideoCard key={moreVideo.id} video={moreVideo} uploader={moreVideoUploader} layout="horizontal" />
               )
@@ -186,5 +181,3 @@ export default function VideoPage() {
     </div>
   );
 }
-
-    
