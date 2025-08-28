@@ -16,6 +16,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from './ui/progress';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 
 export default function UploadForm() {
@@ -32,6 +33,7 @@ export default function UploadForm() {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedQuality, setSelectedQuality] = useState('1080');
 
   const addTag = () => {
     const newTag = tagInput.trim().toLowerCase();
@@ -196,6 +198,24 @@ export default function UploadForm() {
         />
       </div>
 
+      <div className="space-y-2">
+        <Label className="text-lg">Quality</Label>
+        <div className="flex flex-wrap gap-2">
+            {['240', '480', '720', '1080'].map((q) => (
+                <Button 
+                    key={q} 
+                    type="button" 
+                    variant={selectedQuality === q ? "default" : "outline"}
+                    onClick={() => setSelectedQuality(q)}
+                    disabled={isUploading}
+                >
+                    {q}p {q === '1080' && <Badge variant="destructive" className="ml-2 scale-90">HD</Badge>}
+                </Button>
+            ))}
+        </div>
+        <p className="text-xs text-muted-foreground">Note: This is a visual demonstration. The video will be uploaded in its original quality.</p>
+      </div>
+
       <div className="space-y-4">
         <Label htmlFor="tags-input" className="text-lg">Tags</Label>
         <div className="flex gap-2">
@@ -239,9 +259,9 @@ export default function UploadForm() {
       <div className="space-y-2">
         <Label htmlFor="video-file" className="text-lg">Video File</Label>
         <div className="flex items-center justify-center w-full">
-            <label htmlFor="dropzone-file" className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg bg-card relative ${videoFile ? 'border-primary' : ''} ${isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent/50'}`}>
+            <label htmlFor="dropzone-file" className={cn(`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg bg-card relative`, videoFile && 'border-primary', isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent/50')}>
                 {thumbnailPreview ? (
-                  <Image src={thumbnailPreview} alt="Video thumbnail preview" layout="fill" className="object-contain rounded-md" />
+                  <Image src={thumbnailPreview} alt="Video thumbnail preview" fill className="object-contain rounded-md" />
                 ) : (
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
@@ -250,7 +270,9 @@ export default function UploadForm() {
                   </div>
                 )}
                  {videoFile && !thumbnailPreview && (
-                  <p className="font-semibold text-foreground mt-2 z-10 bg-background/80 px-2 py-1 rounded">Generating thumbnail...</p>
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                    <p className="font-semibold text-foreground rounded">Generating thumbnail...</p>
+                  </div>
                 )}
                  {videoFile && thumbnailPreview && (
                   <p className='absolute bottom-2 font-semibold text-foreground z-10 bg-background/80 px-2 py-1 rounded'>{videoFile.name}</p>
@@ -277,5 +299,3 @@ export default function UploadForm() {
     </form>
   );
 }
-
-    
