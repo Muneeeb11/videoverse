@@ -34,48 +34,47 @@ export default function Header() {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
     }
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        <div className="mr-4 flex items-center">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center">
+        <div className="mr-8 flex items-center">
           <Link href="/" className="flex items-center gap-2 font-bold text-lg">
-            <Logo className="h-6 w-6 text-primary" />
-            <span className="font-headline">VideoVerse</span>
+            <Logo className="h-7 w-7 text-primary" />
+            <span className="font-bold text-xl">VideoVerse</span>
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <form onSubmit={handleSearch} className="w-full max-w-md">
+          <form onSubmit={handleSearch} className="w-full max-w-lg">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search for videos..."
-                className="pl-9"
+                placeholder="Search videos..."
+                className="pl-11 h-11 text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </form>
         </div>
-        <div className="flex flex-shrink-0 items-center justify-end space-x-2 pl-4">
+        <div className="flex flex-shrink-0 items-center justify-end space-x-2 pl-6">
           {!loading &&
             (user ? (
               <>
-                <Button asChild>
+                <Button variant="ghost" asChild>
                   <Link href="/upload">
-                    <Upload className="mr-2 h-4 w-4" />
+                    <Upload className="mr-2 h-5 w-5" />
                     Upload
                   </Link>
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                      <Avatar className="h-8 w-8">
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                      <Avatar className="h-10 w-10">
                         <AvatarImage src={user.avatarUrl} alt={user.name} />
-                        <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
@@ -104,7 +103,7 @@ export default function Header() {
                 </DropdownMenu>
               </>
             ) : (
-              <>
+              <div className="flex items-center gap-2">
                 <Button variant="ghost" asChild>
                   <Link href="/login">
                     <LogIn className="mr-2 h-4 w-4" />
@@ -116,7 +115,7 @@ export default function Header() {
                     Sign Up
                   </Link>
                 </Button>
-              </>
+              </div>
             ))}
         </div>
       </div>

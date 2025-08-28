@@ -16,71 +16,71 @@ export default function VideoCard({ video, uploader, layout = 'vertical' }: Vide
     if (layout === 'horizontal') {
         return (
             <Link href={`/video/${video.id}`} className="group">
-                <Card className="overflow-hidden transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary/50">
-                    <CardContent className="p-0 flex">
-                        <div className="aspect-video w-32 relative flex-shrink-0 overflow-hidden">
-                            <Image
-                            src={video.thumbnailUrl}
-                            alt={video.title}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            data-ai-hint="video thumbnail"
-                            />
-                        </div>
-                        <div className="p-3 flex flex-col justify-center">
-                            <h3 className="font-semibold text-base leading-tight truncate mb-1 group-hover:text-primary">
-                            {video.title}
-                            </h3>
-                            {uploader ? (
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span>{uploader.name}</span>
-                                </div>
-                            ) : (
-                                <Skeleton className="h-4 w-16" />
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className={cn("flex gap-4 transition-opacity duration-200 ease-in-out hover:opacity-80")}>
+                    <div className="aspect-video w-40 relative flex-shrink-0 overflow-hidden rounded-lg">
+                        <Image
+                        src={video.thumbnailUrl}
+                        alt={video.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        data-ai-hint="video thumbnail"
+                        />
+                    </div>
+                    <div className="py-1 flex flex-col">
+                        <h3 className="font-semibold text-base leading-tight mb-1 group-hover:text-primary transition-colors">
+                        {video.title}
+                        </h3>
+                        {uploader ? (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span>{uploader.name}</span>
+                            </div>
+                        ) : (
+                            <Skeleton className="h-5 w-24 mt-1" />
+                        )}
+                         <p className="text-xs text-muted-foreground mt-1">
+                            {video.likes.length} likes &middot; {video.createdAt?.toDate().toLocaleDateString()}
+                        </p>
+                    </div>
+                </div>
             </Link>
         )
     }
 
     return (
         <Link href={`/video/${video.id}`} className="group">
-        <Card className="overflow-hidden h-full transition-all duration-300 ease-in-out hover:shadow-lg hover:border-primary/50 flex flex-col">
-            <CardContent className="p-0 flex flex-col flex-grow">
-            <div className="aspect-video relative w-full overflow-hidden">
-                <Image
-                src={video.thumbnailUrl}
-                alt={video.title}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                data-ai-hint="video thumbnail"
-                />
-            </div>
-            <div className="p-4 flex-grow flex flex-col">
-                <h3 className="font-semibold text-lg leading-tight truncate mb-2 group-hover:text-primary">
-                {video.title}
-                </h3>
-                {uploader ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mt-auto">
-                        <Avatar className="h-6 w-6">
-                        <AvatarImage src={uploader.avatarUrl} alt={uploader.name} />
-                        <AvatarFallback>{uploader.name.charAt(0)}</AvatarFallback>
+            <div className="flex flex-col h-full">
+                <div className="aspect-video relative w-full overflow-hidden rounded-xl shadow-md">
+                    <Image
+                    src={video.thumbnailUrl}
+                    alt={video.title}
+                    fill
+                    className="object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    data-ai-hint="video thumbnail"
+                    />
+                </div>
+                <div className="pt-4 flex gap-3">
+                    {uploader ? (
+                         <Avatar className="h-10 w-10 flex-shrink-0">
+                            <AvatarImage src={uploader.avatarUrl} alt={uploader.name} />
+                            <AvatarFallback>{uploader.name.charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
-                        <span>{uploader.name}</span>
+                    ) : (
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                    )}
+                    <div className="flex-grow">
+                        <h3 className="font-semibold text-lg leading-snug truncate group-hover:text-primary transition-colors">
+                            {video.title}
+                        </h3>
+                         {uploader ? (
+                            <p className="text-sm text-muted-foreground mt-1">{uploader.name}</p>
+                        ) : (
+                            <Skeleton className="h-5 w-24 mt-1" />
+                        )}
                     </div>
-                ) : (
-                    <div className="flex items-center gap-2 mt-auto">
-                        <Skeleton className="h-6 w-6 rounded-full" />
-                        <Skeleton className="h-5 w-24" />
-                    </div>
-                )}
+                </div>
             </div>
-            </CardContent>
-        </Card>
         </Link>
     );
 }

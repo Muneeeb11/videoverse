@@ -85,20 +85,25 @@ export default function Home() {
   }, [toast]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8 text-foreground">Trending Videos</h1>
+    <div className="container mx-auto px-4 py-12">
+      <h1 className="text-4xl font-extrabold mb-10 tracking-tight text-foreground">Trending Videos</h1>
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className="h-48 w-full" />
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-5 w-1/2" />
+            <div key={i} className="space-y-3">
+              <Skeleton className="h-48 w-full rounded-xl" />
+              <div className='flex items-center gap-3'>
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className='space-y-2 flex-1'>
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                </div>
+              </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
           {videos.map((video) => {
             const uploader = users[video.uploaderId];
             return (

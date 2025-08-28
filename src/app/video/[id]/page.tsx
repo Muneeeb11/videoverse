@@ -139,24 +139,27 @@ export default function VideoPage() {
 
   if (loading) {
     return (
-        <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-12 gap-y-8">
             <div className="lg:col-span-2">
-            <Skeleton className="aspect-video w-full rounded-lg mb-6" />
-            <Skeleton className="h-10 w-3/4 mb-4" />
-            <div className="flex items-center gap-4 mb-4">
+            <Skeleton className="aspect-video w-full rounded-xl mb-6" />
+            <Skeleton className="h-12 w-3/4 mb-4" />
+            <div className="flex items-center gap-4 mb-6">
                 <Skeleton className="h-12 w-12 rounded-full" />
-                <Skeleton className="h-6 w-1/4" />
+                <div className='flex-1 space-y-2'>
+                    <Skeleton className="h-6 w-1/4" />
+                    <Skeleton className="h-4 w-1/6" />
+                </div>
             </div>
             <Separator className="my-6" />
-            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-24 w-full rounded-xl" />
             </div>
             <div className="lg:col-span-1">
-            <Skeleton className="h-8 w-1/2 mb-4" />
-            <div className="space-y-4">
+            <Skeleton className="h-8 w-1/2 mb-6" />
+            <div className="space-y-6">
                 {[...Array(4)].map((_, i) => (
                     <div key={i} className="flex gap-4">
-                        <Skeleton className="h-24 w-32" />
+                        <Skeleton className="h-24 w-40 rounded-lg" />
                         <div className='space-y-2 flex-grow'>
                             <Skeleton className="h-5 w-full" />
                             <Skeleton className="h-5 w-2/3" />
@@ -176,10 +179,10 @@ export default function VideoPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-12 gap-y-8">
         <div className="lg:col-span-2">
-          <div className="aspect-video w-full bg-card rounded-lg overflow-hidden shadow-lg mb-6">
+          <div className="aspect-video w-full bg-card rounded-xl overflow-hidden shadow-lg mb-4">
             <video
               src={video.videoUrl}
               controls
@@ -188,42 +191,34 @@ export default function VideoPage() {
             />
           </div>
 
-          <h1 className="text-4xl font-extrabold tracking-tight mb-2 text-foreground">
+          <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight mb-4 text-foreground">
             {video.title}
           </h1>
           
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             {uploader && (
-              <Link href={`/profile/${uploader.username}`} className="flex items-center gap-3 group">
-                  <Avatar>
+              <Link href={`/profile/${uploader.username}`} className="flex items-center gap-4 group">
+                  <Avatar className='h-12 w-12'>
                     <AvatarImage src={uploader.avatarUrl} alt={uploader.name} />
-                    <AvatarFallback>{uploader.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{uploader.name.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <span className="font-semibold text-lg group-hover:text-primary">{uploader.name}</span>
+                  <div>
+                    <p className="font-semibold text-lg group-hover:text-primary transition-colors">{uploader.name}</p>
+                    <p className="text-sm text-muted-foreground">@{uploader.username}</p>
+                  </div>
               </Link>
             )}
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleLike} disabled={isLiking || !user}>
-                <Heart className={cn("mr-2 h-5 w-5", isLiked && "fill-destructive text-destructive")} />
-                <span>{likeCount}</span>
+              <Button variant="outline" size="lg" onClick={handleLike} disabled={isLiking || !user} className='rounded-full'>
+                <Heart className={cn("h-5 w-5", isLiked && "fill-destructive text-destructive")} />
+                <span className='ml-2 font-semibold'>{likeCount}</span>
               </Button>
             </div>
           </div>
-
-
-          <Separator className="my-6" />
-
-          <div className="bg-card p-6 rounded-lg shadow-sm">
-            <h2 className="text-xl font-semibold mb-3">Description</h2>
-            <p className="text-muted-foreground whitespace-pre-wrap">
-              {video.description}
-            </p>
-          </div>
           
           {video.tags && video.tags.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-3">Tags</h3>
+            <div className="mt-4 mb-2">
               <div className="flex flex-wrap gap-2">
                 {video.tags.map((tag) => (
                   <Badge key={tag} variant="secondary">{tag}</Badge>
@@ -232,13 +227,23 @@ export default function VideoPage() {
             </div>
           )}
 
+
+          <Separator className="my-6" />
+
+          <div className="bg-secondary/50 p-6 rounded-xl">
+            <h2 className="text-xl font-semibold mb-3">Description</h2>
+            <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {video.description}
+            </p>
+          </div>
+
           <CommentsSection videoId={video.id} />
 
         </div>
 
         <div className="lg:col-span-1">
-          <h2 className="text-2xl font-bold mb-4">More Videos</h2>
-          <div className="space-y-4">
+          <h2 className="text-2xl font-bold mb-6">More Videos</h2>
+          <div className="space-y-6">
             {moreVideos.map((moreVideo) => {
               const moreVideoUploader = allUsers[moreVideo.uploaderId];
               return (

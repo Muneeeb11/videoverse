@@ -80,6 +80,7 @@ export default function CommentsSection({ videoId }: CommentsSectionProps) {
         text: newComment,
         userId: user.id,
         username: user.username,
+        name: user.name,
         avatarUrl: user.avatarUrl,
         createdAt: serverTimestamp(),
       });
@@ -97,25 +98,25 @@ export default function CommentsSection({ videoId }: CommentsSectionProps) {
   };
 
   return (
-    <div className="mt-8 pt-6 border-t">
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <MessageCircle className="w-6 h-6"/>
+    <div className="mt-8 pt-8 border-t border-border/40">
+      <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+        <MessageCircle className="w-7 h-7"/>
         <span>{comments.length} Comment{comments.length !== 1 ? 's' : ''}</span>
       </h2>
       
       {user && (
         <form onSubmit={handleSubmit} className="mb-8 flex items-start gap-4">
-          <Avatar className="mt-1">
+          <Avatar className="mt-1 h-11 w-11">
             <AvatarImage src={user.avatarUrl} alt={user.name} />
-            <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+            <AvatarFallback>{user.name?.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="flex-grow">
             <Textarea
-              placeholder="Add a comment..."
+              placeholder="Add a public comment..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               disabled={submitting}
-              className="mb-2"
+              className="mb-2 min-h-[100px] text-base"
             />
             <div className="flex justify-end">
                 <Button type="submit" disabled={submitting}>
@@ -126,21 +127,27 @@ export default function CommentsSection({ videoId }: CommentsSectionProps) {
         </form>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         {loading ? (
-          <>
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-          </>
+          Array.from({length: 2}).map((_, i) => (
+             <div key={i} className="flex items-start gap-4">
+              <Skeleton className="h-11 w-11 rounded-full" />
+              <div className="flex-grow space-y-2">
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-5 w-3/4" />
+              </div>
+            </div>
+          ))
         ) : comments.length > 0 ? (
           comments.map(comment => (
             <div key={comment.id} className="flex items-start gap-4">
-              <Avatar>
+              <Avatar className="h-11 w-11">
                 <AvatarImage src={comment.avatarUrl} alt={comment.username}/>
-                <AvatarFallback>{comment.username.charAt(0)}</AvatarFallback>
+                <AvatarFallback>{comment.username.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="flex-grow">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-baseline gap-2 mb-1">
                   <Link href={`/profile/${comment.username}`} className="font-semibold hover:underline">
                     @{comment.username}
                   </Link>
@@ -148,12 +155,12 @@ export default function CommentsSection({ videoId }: CommentsSectionProps) {
                     {comment.createdAt ? formatDistanceToNow(comment.createdAt, { addSuffix: true }) : 'just now'}
                   </span>
                 </div>
-                <p className="text-foreground/90 whitespace-pre-wrap">{comment.text}</p>
+                <p className="text-foreground/90 whitespace-pre-wrap leading-relaxed">{comment.text}</p>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-8 bg-card rounded-lg">
+          <div className="text-center py-12 bg-secondary/50 rounded-xl">
             <p className="text-muted-foreground">Be the first to comment!</p>
           </div>
         )}
