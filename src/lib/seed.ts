@@ -1,3 +1,4 @@
+
 'use server';
 
 import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
@@ -14,21 +15,21 @@ const videos: Omit<Video, 'id' | 'uploaderId'>[] = [
     {
         title: 'Exploring the Alps',
         description: 'A breathtaking journey through the scenic routes of the Swiss Alps. Snow-capped peaks, serene lakes, and lush green valleys await.',
-        thumbnailUrl: 'https://picsum.photos/seed/alps/600/400',
+        thumbnailUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images_480x270/ForBiggerBlazes.jpg',
         videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
         tags: ['travel', 'alps', 'switzerland', 'nature', 'adventure'],
     },
     {
         title: 'Ultimate Guide to Baking Sourdough',
         description: 'Learn how to bake the perfect loaf of sourdough bread from scratch. From starter to final bake, we cover all the steps.',
-        thumbnailUrl: 'https://picsum.photos/seed/baking/600/400',
+        thumbnailUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images_480x270/ForBiggerEscapes.jpg',
         videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
         tags: ['baking', 'sourdough', 'cooking', 'food', 'diy'],
     },
     {
         title: 'My Desk Setup Tour 2024',
         description: 'A detailed look at my productivity-focused desk setup for 2024. Featuring the latest tech and ergonomic gear.',
-        thumbnailUrl: 'https://picsum.photos/seed/desk/600/400',
+        thumbnailUrl: 'https://storage.googleapis.com/gtv-videos-bucket/sample/images_480x270/ForBiggerFun.jpg',
         videoUrl: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
         tags: ['desk setup', 'tech', 'productivity', 'home office'],
     },
