@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -26,6 +27,8 @@ export default function UploadForm() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -41,15 +44,84 @@ export default function UploadForm() {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const generateThumbnail = (file: File): Promise<{ thumbnailFile: File, previewUrl: string }> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const url = URL.createObjectURL(file);
+  
+      video.onloadeddata = () => {
+        video.currentTime = 1; // Seek to 1 second
+      };
+  
+      video.onseeked = () => {
+        // Set canvas dimensions
+        const aspectRatio = video.videoWidth / video.videoHeight;
+        canvas.width = 480;
+        canvas.height = 480 / aspectRatio;
+  
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Could not get canvas context'));
+  
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url); // Clean up
+  
+        canvas.toBlob((blob) => {
+          if (!blob) return reject(new Error('Canvas to Blob conversion failed'));
+          const thumbnail = new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' });
+          const previewUrl = URL.createObjectURL(thumbnail);
+          resolve({ thumbnailFile: thumbnail, previewUrl });
+        }, 'image/jpeg', 0.8); // 80% quality
+      };
+  
+      video.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load video file.'));
+      };
+  
+      video.src = url;
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type.startsWith('video/')) {
         setVideoFile(file);
+        setThumbnailPreview(null); // Reset preview
+        setThumbnailFile(null);
+        try {
+          const { thumbnailFile, previewUrl } = await generateThumbnail(file);
+          setThumbnailFile(thumbnailFile);
+          setThumbnailPreview(previewUrl);
+        } catch (error) {
+          console.error(error);
+          toast({ title: "Thumbnail Generation Failed", description: "Could not create a thumbnail from the video.", variant: 'destructive' });
+        }
       } else {
         toast({ title: "Invalid File", description: "Please select a valid video file.", variant: 'destructive' });
       }
     }
+  };
+
+  const uploadFile = (file: File, filePath: string) => {
+    const fileRef = ref(storage, filePath);
+    const uploadTask = uploadBytesResumable(fileRef, file);
+    return new Promise<string>((resolve, reject) => {
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          if (file.type.startsWith('video/')) {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(progress);
+          }
+        },
+        (error) => reject(error),
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        }
+      );
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,52 +130,38 @@ export default function UploadForm() {
         toast({ title: "Not Authenticated", description: "You must be logged in to upload a video.", variant: 'destructive' });
         return;
     }
-    if (!videoFile || !title) {
-        toast({ title: "Missing Fields", description: "Please provide a title and a video file.", variant: 'destructive' });
+    if (!videoFile || !thumbnailFile || !title) {
+        toast({ title: "Missing Fields", description: "Please provide a title, a video file, and wait for the thumbnail to generate.", variant: 'destructive' });
         return;
     }
 
     setIsUploading(true);
     setUploadProgress(0);
+    const uniqueId = `${user.id}/${Date.now()}`;
 
-    const videoFileRef = ref(storage, `videos/${user.id}/${Date.now()}-${videoFile.name}`);
-    const uploadTask = uploadBytesResumable(videoFileRef, videoFile);
+    try {
+      const videoUrl = await uploadFile(videoFile, `videos/${uniqueId}-${videoFile.name}`);
+      const thumbnailUrl = await uploadFile(thumbnailFile, `thumbnails/${uniqueId}-thumbnail.jpg`);
+      
+      const newVideoDoc = await addDoc(collection(db, 'videos'), {
+          title,
+          description,
+          tags,
+          videoUrl,
+          thumbnailUrl,
+          uploaderId: user.id,
+          createdAt: serverTimestamp(),
+      });
 
-    uploadTask.on('state_changed',
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setUploadProgress(progress);
-      },
-      (error) => {
-        console.error("Upload failed: ", error);
-        toast({ title: "Upload Failed", description: "Something went wrong. Please check storage rules and try again.", variant: 'destructive' });
+      toast({ title: "Success!", description: "Your video has been uploaded." });
+      router.push(`/video/${newVideoDoc.id}`);
+
+    } catch (error) {
+      console.error("Upload failed: ", error);
+      toast({ title: "Upload Failed", description: "Something went wrong during the upload. Please check storage rules and try again.", variant: 'destructive' });
+    } finally {
         setIsUploading(false);
-      },
-      async () => {
-        try {
-          const videoUrl = await getDownloadURL(uploadTask.snapshot.ref);
-          const thumbnailUrl = `https://picsum.photos/seed/${uploadTask.snapshot.ref.name}/600/400`;
-
-          const newVideoDoc = await addDoc(collection(db, 'videos'), {
-              title,
-              description,
-              tags,
-              videoUrl,
-              thumbnailUrl,
-              uploaderId: user.id,
-              createdAt: serverTimestamp(),
-          });
-
-          toast({ title: "Success!", description: "Your video has been uploaded." });
-          router.push(`/video/${newVideoDoc.id}`);
-        } catch (error) {
-            console.error("Error saving video data:", error);
-            toast({ title: "Error", description: "Failed to save video details.", variant: 'destructive' });
-        } finally {
-            setIsUploading(false);
-        }
-      }
-    );
+    }
   };
 
 
@@ -181,9 +239,14 @@ export default function UploadForm() {
         <div className="flex items-center justify-center w-full">
             <label htmlFor="dropzone-file" className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg  bg-card  ${videoFile ? 'border-primary' : ''} ${isUploading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-accent/50'}`}>
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
+                    {thumbnailPreview ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={thumbnailPreview} alt="Video thumbnail preview" className="h-28 object-contain rounded-md" />
+                    ) : (
+                      <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
+                    )}
                     {videoFile ? (
-                      <p className='font-semibold text-foreground'>{videoFile.name}</p>
+                      <p className='font-semibold text-foreground mt-2'>{videoFile.name}</p>
                     ) : (
                       <>
                         <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
@@ -196,7 +259,7 @@ export default function UploadForm() {
         </div> 
       </div>
 
-      {isUploading && (
+      {isUploading && uploadProgress > 0 && (
         <div className="space-y-2">
             <Label className="text-lg">Upload Progress</Label>
             <Progress value={uploadProgress} className="w-full" />
@@ -205,7 +268,7 @@ export default function UploadForm() {
       )}
 
       <div className="flex justify-end">
-        <Button type="submit" size="lg" disabled={isUploading}>
+        <Button type="submit" size="lg" disabled={isUploading || !thumbnailFile}>
           <UploadCloud className="mr-2 h-5 w-5" />
           {isUploading ? `Uploading... ${Math.round(uploadProgress)}%` : 'Upload Video'}
         </Button>
