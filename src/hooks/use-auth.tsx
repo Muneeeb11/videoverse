@@ -24,14 +24,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setFirebaseUser(firebaseUser);
-      if (firebaseUser) {
-        const userDocRef = doc(db, "users", firebaseUser.uid);
+    const unsubscribe = onAuthStateChanged(auth, async (currentFirebaseUser) => {
+      setFirebaseUser(currentFirebaseUser);
+      if (currentFirebaseUser) {
+        const userDocRef = doc(db, "users", currentFirebaseUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
           setUser({ id: userDocSnap.id, ...userDocSnap.data() } as User);
         } else {
+          // This case might happen if a user is authenticated but their Firestore doc is deleted.
           setUser(null);
         }
       } else {

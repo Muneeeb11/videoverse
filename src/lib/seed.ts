@@ -5,9 +5,9 @@ import { db } from './firebase';
 import type { User, Video } from './data';
 
 // --- DUMMY DATA ---
-const users: Omit<User, 'id'>[] = [
-    { name: 'Alice Johnson', username: 'alice', avatarUrl: 'https://i.pravatar.cc/150?u=alice', email: 'alice@example.com' },
-    { name: 'Bob Williams', username: 'bob', avatarUrl: 'https://i.pravatar.cc/150?u=bob', email: 'bob@example.com' },
+const users: Omit<User, 'id' | 'email'>[] = [
+    { name: 'Alice Johnson', username: 'alice', avatarUrl: 'https://i.pravatar.cc/150?u=alice' },
+    { name: 'Bob Williams', username: 'bob', avatarUrl: 'https://i.pravatar.cc/150?u=bob' },
 ];
 
 const videos: Omit<Video, 'id' | 'uploaderId'>[] = [
@@ -53,11 +53,13 @@ export async function seedDatabase() {
     
     // Add users and store their new doc IDs
     const userIds: string[] = [];
-    users.forEach(userData => {
+    for (const userData of users) {
+        // For seeding, let's create a placeholder email
+        const email = `${userData.username}@example.com`;
         const userRef = doc(collection(db, 'users'));
-        batch.set(userRef, userData);
+        batch.set(userRef, { ...userData, email });
         userIds.push(userRef.id);
-    });
+    }
 
     // Add videos, assigning a random user ID to each
     videos.forEach(videoData => {
