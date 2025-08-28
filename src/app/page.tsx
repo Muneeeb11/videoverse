@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Record<string, User>>({});
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -19,6 +19,15 @@ export default function Home() {
     const fetchVideosAndUsers = async () => {
       setLoading(true);
       try {
+        // First, fetch all users and create a map for easy lookup
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const usersData = usersSnapshot.docs.reduce((acc, doc) => {
+          acc[doc.id] = { id: doc.id, ...doc.data() } as User;
+          return acc;
+        }, {} as Record<string, User>);
+        setUsers(usersData);
+        
+        // Then, fetch videos
         const videosQuery = query(collection(db, "videos"), orderBy('createdAt', 'desc'));
         let videosSnapshot = await getDocs(videosQuery);
         
@@ -47,17 +56,22 @@ export default function Home() {
         const videosData = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Video[];
         setVideos(videosData);
 
-        const usersSnapshot = await getDocs(collection(db, "users"));
-        const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
-        setUsers(usersData);
-
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching data:", error);
-        toast({
-            title: "Error",
-            description: "Could not fetch video data.",
-            variant: "destructive",
-        });
+        // Display a more specific error if it's a permission issue
+        if (error.code === 'permission-denied') {
+             toast({
+                title: "Permissions Error",
+                description: "Could not fetch video data. Please check Firestore security rules.",
+                variant: "destructive",
+            });
+        } else {
+            toast({
+                title: "Error",
+                description: "Could not fetch video data.",
+                variant: "destructive",
+            });
+        }
       }
       setLoading(false);
     };
@@ -81,7 +95,7 @@ export default function Home() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {videos.map((video) => {
-            const uploader = users.find((user) => user.id === video.uploaderId);
+            const uploader = users[video.uploaderId];
             return (
               <VideoCard key={video.id} video={video} uploader={uploader} />
             );
