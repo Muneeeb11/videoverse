@@ -9,6 +9,9 @@ export default {
   ],
   theme: {
     extend: {
+      minHeight: {
+        'screen-minus-header': 'calc(100vh - 56px)',
+      },
       fontFamily: {
         body: ['Inter', 'sans-serif'],
         headline: ['Inter', 'sans-serif'],
