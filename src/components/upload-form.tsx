@@ -1,42 +1,24 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useFormState } from 'react-dom';
-import { handleSuggestTags } from '@/lib/actions';
+import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { UploadCloud, X, Loader2, Wand2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
-
-const initialState = {
-  message: '',
-  tags: [] as string[],
-  error: false,
-};
+import { UploadCloud, X } from 'lucide-react';
 
 export default function UploadForm() {
-  const [state, formAction] = useFormState(handleSuggestTags, initialState);
   const [tags, setTags] = useState<string[]>([]);
-  const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [tagInput, setTagInput] = useState('');
 
-  useEffect(() => {
-    if (state.message) {
-      if (state.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: state.message,
-        });
-      } else if (state.tags.length > 0) {
-        setTags(prevTags => [...new Set([...prevTags, ...state.tags])]);
-      }
+  const addTag = () => {
+    const newTag = tagInput.trim();
+    if (newTag && !tags.includes(newTag)) {
+      setTags([...tags, newTag]);
+      setTagInput('');
     }
-  }, [state, toast]);
+  };
 
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
@@ -61,30 +43,21 @@ export default function UploadForm() {
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="tags" className="text-lg">Tags</Label>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              const form = e.currentTarget.closest('form');
-              if (form) {
-                const formData = new FormData(form);
-                startTransition(() => {
-                  formAction(formData);
-                });
+        <Label htmlFor="tags-input" className="text-lg">Tags</Label>
+        <div className="flex gap-2">
+          <Input 
+            id="tags-input" 
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addTag();
               }
             }}
-            disabled={isPending}
-          >
-            {isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Wand2 className="mr-2 h-4 w-4" />
-            )}
-            Suggest with AI
-          </Button>
+            placeholder="Add a tag and press Enter"
+          />
+          <Button type="button" onClick={addTag}>Add Tag</Button>
         </div>
         <div className="p-4 border-2 border-dashed rounded-lg min-h-[80px] flex flex-wrap gap-2">
           {tags.length > 0 ? (
@@ -102,7 +75,7 @@ export default function UploadForm() {
               </Badge>
             ))
           ) : (
-            <p className="text-sm text-muted-foreground self-center mx-auto">AI-suggested tags will appear here.</p>
+            <p className="text-sm text-muted-foreground self-center mx-auto">Added tags will appear here.</p>
           )}
         </div>
       </div>
