@@ -1,28 +1,39 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Video, User } from '@/lib/data';
 import VideoCard from '@/components/video-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import SeedButton from '@/components/seed-button';
 
 export default function Home() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [needsSeeding, setNeedsSeeding] = useState(false);
 
   useEffect(() => {
     const fetchVideosAndUsers = async () => {
       setLoading(true);
       try {
-        const videosSnapshot = await getDocs(collection(db, "videos"));
+        const videosQuery = query(collection(db, "videos"), orderBy('createdAt', 'desc'));
+        const videosSnapshot = await getDocs(videosQuery);
+        
+        if (videosSnapshot.empty) {
+            setNeedsSeeding(true);
+            setLoading(false);
+            return;
+        }
+        
         const videosData = videosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Video[];
         setVideos(videosData);
 
         const usersSnapshot = await getDocs(collection(db, "users"));
         const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as User[];
         setUsers(usersData);
+
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -45,6 +56,8 @@ export default function Home() {
             </div>
           ))}
         </div>
+      ) : needsSeeding ? (
+        <SeedButton />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {videos.map((video) => {

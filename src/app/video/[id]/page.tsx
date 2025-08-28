@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { doc, getDoc, collection, getDocs, query, where, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, limit, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Video, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,15 +19,24 @@ export default function VideoPage() {
   const [video, setVideo] = useState<Video | null>(null);
   const [uploader, setUploader] = useState<User | null>(null);
   const [moreVideos, setMoreVideos] = useState<Video[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id) return;
+    const fetchAllUsers = async () => {
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as User);
+      setAllUsers(usersData);
+      return usersData;
+    };
 
     const fetchVideoData = async () => {
       setLoading(true);
       
       const videoId = Array.isArray(id) ? id[0] : id;
+
+      // Pre-fetch all users to avoid multiple queries
+      const users = await fetchAllUsers();
 
       // Fetch video
       const videoDocRef = doc(db, 'videos', videoId);
@@ -40,35 +49,31 @@ export default function VideoPage() {
       const videoData = { id: videoDocSnap.id, ...videoDocSnap.data() } as Video;
       setVideo(videoData);
       
-      // Fetch uploader
+      // Find uploader from pre-fetched users
       if (videoData.uploaderId) {
-        const userDocRef = doc(db, 'users', videoData.uploaderId);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          setUploader({ id: userDocSnap.id, ...userDocSnap.data() } as User);
+        const uploaderData = users.find(u => u.id === videoData.uploaderId);
+        if (uploaderData) {
+          setUploader(uploaderData);
         }
       }
 
       // Fetch more videos (excluding the current one)
-      const videosQuery = query(collection(db, 'videos'), where('__name__', '!=', videoId), limit(4));
+      const videosQuery = query(collection(db, 'videos'), where('__name__', '!=', videoId), orderBy('__name__'), limit(4));
       const moreVideosSnapshot = await getDocs(videosQuery);
-      const moreVideosData = moreVideosSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Video));
-      
-      // We need user data for these video cards as well
-      const allUsersSnapshot = await getDocs(collection(db, 'users'));
-      const allUsersData = allUsersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as User);
-
-      const videosWithUploader = moreVideosData.map(v => {
-        const uploader = allUsersData.find(u => u.id === v.uploaderId);
-        return { ...v, uploader };
+      const moreVideosData = moreVideosSnapshot.docs.map(doc => {
+          const v = { id: doc.id, ...doc.data() } as Video;
+          const uploader = users.find(u => u.id === v.uploaderId);
+          return { ...v, uploader };
       });
-      setMoreVideos(videosWithUploader);
-
+      
+      setMoreVideos(moreVideosData);
 
       setLoading(false);
     };
 
-    fetchVideoData();
+    if (id) {
+        fetchVideoData();
+    }
   }, [id]);
 
   if (loading) {
@@ -88,7 +93,16 @@ export default function VideoPage() {
             <div className="lg:col-span-1">
             <Skeleton className="h-8 w-1/2 mb-4" />
             <div className="space-y-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex gap-4">
+                        <Skeleton className="h-24 w-32" />
+                        <div className='space-y-2 flex-grow'>
+                            <Skeleton className="h-5 w-full" />
+                            <Skeleton className="h-5 w-2/3" />
+                            <Skeleton className="h-5 w-1/2" />
+                        </div>
+                    </div>
+                ))}
             </div>
             </div>
         </div>
@@ -138,14 +152,16 @@ export default function VideoPage() {
             </p>
           </div>
           
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3">Tags</h3>
-            <div className="flex flex-wrap gap-2">
-              {video.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">{tag}</Badge>
-              ))}
+          {video.tags && video.tags.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-3">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {video.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary">{tag}</Badge>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
 
@@ -153,9 +169,9 @@ export default function VideoPage() {
           <h2 className="text-2xl font-bold mb-4">More Videos</h2>
           <div className="space-y-4">
             {moreVideos.map((moreVideo) => {
-              const moreVideoUploader = moreVideo.uploaderId ? (moreVideo as any).uploader : undefined;
+              const moreVideoUploader = (moreVideo as any).uploader;
               return (
-                <VideoCard key={moreVideo.id} video={moreVideo} uploader={moreVideoUploader} />
+                <VideoCard key={moreVideo.id} video={moreVideo} uploader={moreVideoUploader} layout="horizontal" />
               )
             })}
           </div>
